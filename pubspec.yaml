@@ -1,4 +1,4 @@
-name: tradexa_flutter_app
+name: tradexa_flutter
 description: "A new Flutter project."
 publish_to: 'none'
 version: 0.1.0+1
@@ -9,6 +9,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_riverpod: any
+  go_router: any
+  http: any
+  shared_preferences: any
+  google_fonts: any
+  fl_chart: any
+  flutter_animate: any
+  form_builder_validators: any
+  flutter_form_builder: any
+  lucide_icons: any
 
 dev_dependencies:
   flutter_test:
