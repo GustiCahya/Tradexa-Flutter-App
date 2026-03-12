@@ -21,22 +21,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
+    final messenger = ScaffoldMessenger.of(context);
+
     setState(() => _isLoading = true);
 
     try {
       await ref.read(authServiceProvider).register(_name, _email, _password);
-      // Auto login after test register or just redirect to login
       await ref.read(authServiceProvider).login(_email, _password);
+
       if (mounted) context.go('/overview');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
+      print(e);
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

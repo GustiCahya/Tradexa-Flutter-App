@@ -33,20 +33,26 @@ class Trade {
 
   factory Trade.fromJson(Map<String, dynamic> json) {
     return Trade(
-      id: json['id'],
-      userId: json['userId'],
-      pair: json['pair'],
-      date: DateTime.parse(json['date']).toLocal(),
-      session: json['session'],
-      entryTF: json['entryTF'],
-      direction: json['direction'],
-      pnl: (json['pnl'] as num).toDouble(),
-      rr: (json['rr'] as num).toDouble(),
-      day: json['day'],
-      emotion: json['emotion'],
-      notes: json['notes'],
-      createdAt: DateTime.parse(json['createdAt']).toLocal(),
-      updatedAt: DateTime.parse(json['updatedAt']).toLocal(),
+      id: json['id']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      pair: json['pair']?.toString() ?? '',
+      date: json['date'] != null
+          ? DateTime.parse(json['date']).toLocal()
+          : DateTime.now(),
+      session: json['session']?.toString() ?? '',
+      entryTF: json['entryTF']?.toString() ?? '',
+      direction: json['direction']?.toString() ?? '',
+      pnl: (json['pnl'] as num?)?.toDouble() ?? 0.0,
+      rr: (json['rr'] as num?)?.toDouble() ?? 0.0,
+      day: json['day']?.toString() ?? '',
+      emotion: json['emotion']?.toString() ?? '',
+      notes: json['notes']?.toString(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt']).toLocal()
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt']).toLocal()
+          : DateTime.now(),
     );
   }
 

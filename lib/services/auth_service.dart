@@ -11,7 +11,7 @@ class AuthService {
   AuthService(this._api);
 
   Future<void> login(String email, String password) async {
-    final response = await _api.post('/auth/login', {
+    final response = await _api.post('/login', {
       'email': email,
       'password': password,
     });
@@ -29,7 +29,7 @@ class AuthService {
   }
 
   Future<void> register(String name, String email, String password) async {
-    final response = await _api.post('/auth/register', {
+    final response = await _api.post('/register', {
       'name': name,
       'email': email,
       'password': password,
@@ -48,5 +48,23 @@ class AuthService {
   Future<bool> isAuthenticated() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token') != null;
+  }
+
+  Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token == null) return null;
+
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+
+      final payload = base64Url.normalize(parts[1]);
+      final String decoded = utf8.decode(base64Url.decode(payload));
+      final data = jsonDecode(decoded);
+      return data['id']?.toString();
+    } catch (e) {
+      return null;
+    }
   }
 }

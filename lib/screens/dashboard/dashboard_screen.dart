@@ -11,8 +11,12 @@ final tradesProvider = FutureProvider<List<Trade>>((ref) async {
   final api = ApiService();
   final response = await api.get('/trades');
   if (response.statusCode == 200) {
-    final List data = jsonDecode(response.body);
-    return data.map((e) => Trade.fromJson(e)).toList();
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    final List tradesList = data['trades'] ?? [];
+    return tradesList
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Trade.fromJson(e))
+        .toList();
   }
   return []; // return empty or handle error
 });
