@@ -1,20 +1,37 @@
-class Trade {
-  final String id;
-  final String userId;
-  final String pair;
-  final DateTime date;
-  final String session;
-  final String entryTF;
-  final String direction;
-  final double pnl;
-  final double rr;
-  final String day;
-  final String emotion;
-  final String? notes;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+import 'package:isar/isar.dart';
 
-  Trade({
+part 'trade.g.dart';
+
+@collection
+class Trade {
+  Id isarId = Isar.autoIncrement;
+
+  @Index(unique: true, replace: true)
+  late String id;
+  late String userId;
+
+  @Index(type: IndexType.value)
+  late String pair;
+
+  @Index(type: IndexType.value)
+  late DateTime date;
+
+  late String session;
+  late String entryTF;
+  late String direction;
+  late double pnl;
+  late double rr;
+  late String day;
+  late String emotion;
+  String? notes;
+  late DateTime createdAt;
+  late DateTime updatedAt;
+
+  // Empty constructor for Isar
+  Trade();
+
+  // Convenience constructor to ease migration
+  Trade.create({
     required this.id,
     required this.userId,
     required this.pair,
@@ -32,7 +49,7 @@ class Trade {
   });
 
   factory Trade.fromJson(Map<String, dynamic> json) {
-    return Trade(
+    return Trade.create(
       id: json['id']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       pair: json['pair']?.toString() ?? '',

@@ -1,12 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../services/api_service.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../../models/trade.dart';
+import '../../providers/trade_provider.dart';
 
 // ── Constants matching Tradexa web app ──────────────────────────────────────
 
@@ -53,6 +52,7 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
   final _formKey = GlobalKey<FormBuilderState>();
   final _pnlController = TextEditingController();
   final _rrController = TextEditingController();
+  final _pairController = TextEditingController();
   bool _isLoading = false;
   bool _isLoadingTrade = false;
   bool _isSyncing = false;
@@ -73,6 +73,7 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
   void dispose() {
     _pnlController.dispose();
     _rrController.dispose();
+    _pairController.dispose();
     super.dispose();
   }
 
@@ -111,50 +112,39 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
   // ── Load existing trade for editing ─────────────────────────────────────
 
   Future<void> _loadTrade() async {
-    setState(() => _isLoadingTrade = true);
-    try {
-      final api = ApiService();
-      final response = await api.get('/trades/${widget.tradeId}');
+    // Attempt to load from Riverpod / Isar cache instantly without loading spinner
+    final trades = ref.read(tradesProvider).value;
+    final trade = trades?.where((t) => t.id == widget.tradeId).firstOrNull;
 
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-
-        // Support both { "trade": { ... } } and direct { ... }
-        final Map<String, dynamic> tradeJson =
-            decoded is Map<String, dynamic> && decoded.containsKey('trade')
-            ? decoded['trade']
-            : decoded;
-
-        // Wait for the form to be built before patching
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final date = tradeJson['date'] != null
-              ? DateTime.parse(tradeJson['date']).toLocal()
-              : DateTime.now();
-
-          _formKey.currentState?.patchValue({
-            'pair': tradeJson['pair']?.toString() ?? '',
-            'date': date,
-            'session': tradeJson['session']?.toString(),
-            'direction': tradeJson['direction']?.toString(),
-            'entryTF': tradeJson['entryTF']?.toString() ?? '',
-            'emotion': tradeJson['emotion']?.toString(),
-            'notes': tradeJson['notes']?.toString() ?? '',
-          });
-
-          _isSyncing = true;
-          _pnlController.text = (tradeJson['pnl'] ?? 0).toString();
-          _rrController.text = (tradeJson['rr'] ?? 0).toString();
-          _isSyncing = false;
+    if (trade != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _formKey.currentState?.patchValue({
+          'pair': trade.pair,
+          'date': trade.date,
+          'session': trade.session,
+          'direction': trade.direction,
+          'entryTF': trade.entryTF,
+          'emotion': trade.emotion,
+          'notes': trade.notes ?? '',
         });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load trade: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoadingTrade = false);
+
+        _pairController.text = trade.pair;
+
+        _isSyncing = true;
+        _pnlController.text = trade.pnl.toString();
+        _rrController.text = trade.rr.toString();
+        _isSyncing = false;
+      });
+      return;
+    }
+
+    setState(() => _isLoadingTrade = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Trade not found locally. Please ensure it synced.'),
+        ),
+      );
     }
   }
 
@@ -178,7 +168,7 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
     if (rrRaw == '-') rrRaw = '0';
 
     final body = <String, dynamic>{
-      'pair': values['pair'],
+      'pair': _pairController.text.trim(),
       'date': date.toUtc().toIso8601String(),
       'session': values['session'],
       'entryTF': values['entryTF'],
@@ -191,15 +181,32 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
     };
 
     try {
-      final api = ApiService();
+      final newTrade = Trade.create(
+        id: _isEditing
+            ? widget.tradeId!
+            : DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: '', // Optional depending on how your API manages users locally
+        pair: body['pair'] as String,
+        date: date,
+        session: body['session'] as String,
+        entryTF: body['entryTF'] as String,
+        direction: body['direction'] as String,
+        pnl: body['pnl'] as double,
+        rr: body['rr'] as double,
+        day: body['day'] as String,
+        emotion: body['emotion'] as String,
+        notes: body['notes'] as String?,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
       if (!_isEditing) {
-        await api.post('/trades', body);
+        // addTrade will save to Isar -> UI updates instantly, syncs via background API
+        await ref.read(tradesProvider.notifier).addTrade(newTrade);
       } else {
-        body['id'] = widget.tradeId;
-        await api.put('/trades', body);
+        await ref.read(tradesProvider.notifier).updateTrade(newTrade);
       }
 
-      ref.refresh(tradesProvider);
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
@@ -226,18 +233,84 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    // ── Pair ───────────────────────────────────────────
-                    FormBuilderDropdown<String>(
-                      name: 'pair',
-                      decoration: const InputDecoration(
-                        labelText: 'Pair / Symbol',
+                    // ── Pair / Symbol (Autocomplete) ───────────────────
+                    Autocomplete<String>(
+                      initialValue: TextEditingValue(
+                        text: _pairController.text,
                       ),
-                      items: _pairOptions
-                          .map(
-                            (s) => DropdownMenuItem(value: s, child: Text(s)),
-                          )
-                          .toList(),
-                      validator: FormBuilderValidators.required(),
+                      optionsBuilder: (textEditingValue) {
+                        final query = textEditingValue.text.toUpperCase();
+                        if (query.isEmpty) return _pairOptions;
+                        return _pairOptions.where(
+                          (p) => p.toUpperCase().contains(query),
+                        );
+                      },
+                      onSelected: (selected) {
+                        _pairController.text = selected;
+                        _formKey.currentState?.fields['pair']?.didChange(
+                          selected,
+                        );
+                      },
+                      fieldViewBuilder:
+                          (
+                            context,
+                            textEditingController,
+                            focusNode,
+                            onFieldSubmitted,
+                          ) {
+                            // Keep our controller in sync with the autocomplete controller
+                            textEditingController.addListener(() {
+                              _pairController.text = textEditingController.text;
+                            });
+                            if (_pairController.text.isNotEmpty &&
+                                textEditingController.text.isEmpty) {
+                              textEditingController.text = _pairController.text;
+                            }
+                            return FormBuilderTextField(
+                              name: 'pair',
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              decoration: const InputDecoration(
+                                labelText: 'Pair / Symbol',
+                                hintText: 'e.g. EUR/USD, XAU/USD, BTC/USD',
+                              ),
+                              textCapitalization: TextCapitalization.characters,
+                              validator: FormBuilderValidators.required(
+                                errorText: 'Pair is required',
+                              ),
+                              onChanged: (val) =>
+                                  _pairController.text = val ?? '',
+                            );
+                          },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            color: Theme.of(context).canvasColor,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxHeight: 200,
+                                maxWidth: 300,
+                              ),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                padding: EdgeInsets.zero,
+                                itemCount: options.length,
+                                itemBuilder: (context, index) {
+                                  final option = options.elementAt(index);
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(option),
+                                    onTap: () => onSelected(option),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -247,6 +320,7 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
                       inputType: InputType.both,
                       decoration: const InputDecoration(
                         labelText: 'Date & Time',
+                        hintText: 'Select date and time of the trade',
                       ),
                       initialValue: DateTime.now(),
                     ),
@@ -304,6 +378,7 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
                             controller: _pnlController,
                             decoration: const InputDecoration(
                               labelText: 'PnL (\$)',
+                              hintText: 'e.g. 150 or -75',
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
                               signed: true,
@@ -319,6 +394,7 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
                             controller: _rrController,
                             decoration: const InputDecoration(
                               labelText: 'Risk / Reward',
+                              hintText: 'e.g. 2 or -1.5',
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
                               signed: true,
@@ -345,7 +421,10 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
                     // ── Emotion ───────────────────────────────────────
                     FormBuilderDropdown<String>(
                       name: 'emotion',
-                      decoration: const InputDecoration(labelText: 'Emotion'),
+                      decoration: const InputDecoration(
+                        labelText: 'Emotion',
+                        hintText: 'How did you feel during this trade?',
+                      ),
                       initialValue: 'Neutral',
                       items: _emotionOptions
                           .map(
@@ -358,7 +437,12 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
                     // ── Notes ─────────────────────────────────────────
                     FormBuilderTextField(
                       name: 'notes',
-                      decoration: const InputDecoration(labelText: 'Notes'),
+                      decoration: const InputDecoration(
+                        labelText: 'Notes',
+                        hintText:
+                            'Describe your setup, mistakes, or reflections...',
+                        alignLabelWithHint: true,
+                      ),
                       maxLines: 3,
                     ),
                     const SizedBox(height: 32),

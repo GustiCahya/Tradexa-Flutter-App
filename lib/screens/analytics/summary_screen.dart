@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_colors.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../../providers/trade_provider.dart';
 
 class SummaryScreen extends ConsumerWidget {
   const SummaryScreen({super.key});

@@ -1,25 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../models/trade.dart';
-import '../../services/api_service.dart';
+import '../../providers/trade_provider.dart';
 import '../../theme/app_colors.dart';
-
-final tradesProvider = FutureProvider<List<Trade>>((ref) async {
-  final api = ApiService();
-  final response = await api.get('/trades');
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> data = jsonDecode(response.body);
-    final List tradesList = data['trades'] ?? [];
-    return tradesList
-        .whereType<Map<String, dynamic>>()
-        .map((e) => Trade.fromJson(e))
-        .toList();
-  }
-  return []; // return empty or handle error
-});
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -59,7 +44,8 @@ class DashboardScreen extends ConsumerWidget {
               : 0.0;
 
           return RefreshIndicator(
-            onRefresh: () async => ref.refresh(tradesProvider),
+            onRefresh: () async =>
+                ref.read(tradesProvider.notifier).forceRefresh(),
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -172,8 +158,9 @@ class _TradeRow extends ConsumerWidget {
                 TextButton(
                   onPressed: () async {
                     Navigator.pop(c);
-                    await ApiService().delete('/trades/${trade.id}');
-                    ref.refresh(tradesProvider);
+                    await ref
+                        .read(tradesProvider.notifier)
+                        .deleteTrade(trade.id);
                   },
                   child: const Text(
                     'Delete',
