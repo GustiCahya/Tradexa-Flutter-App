@@ -111,6 +111,15 @@ class AppTheme {
         backgroundColor: AppColors.surfaceSolid,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
+      // Date and time pickers
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: AppColors.surfaceSolid,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: AppColors.surfaceSolid,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
     );
   }
 }
