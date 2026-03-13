@@ -10,17 +10,23 @@ import '../../providers/trade_provider.dart';
 // ── Constants matching Tradexa web app ──────────────────────────────────────
 
 const List<String> _pairOptions = [
-  'EUR/USD',
-  'GBP/USD',
-  'USD/JPY',
-  'AUD/USD',
-  'USD/CAD',
-  'USD/CHF',
-  'NZD/USD',
-  'GBP/JPY',
-  'XAU/USD',
-  'BTC/USD',
-  'ETH/USD',
+  'EURUSD',
+  'GBPUSD',
+  'USDJPY',
+  'AUDUSD',
+  'USDCAD',
+  'USDCHF',
+  'NZDUSD',
+  'GBPJPY',
+  'XAUUSD',
+  'XAGUSD',
+  'BTCUSD',
+  'ETHUSD',
+  'SPX500',
+  'NAS100',
+  'US30',
+  'US2000',
+  'USTEC',
 ];
 
 const List<String> _sessionOptions = ['London', 'New York', 'Asian', 'Overlap'];
@@ -272,7 +278,7 @@ class _TradeFormScreenState extends ConsumerState<TradeFormScreen> {
                               focusNode: focusNode,
                               decoration: const InputDecoration(
                                 labelText: 'Pair / Symbol',
-                                hintText: 'e.g. EUR/USD, XAU/USD, BTC/USD',
+                                hintText: 'e.g. EURUSD, XAUUSD, BTCUSD',
                               ),
                               textCapitalization: TextCapitalization.characters,
                               validator: FormBuilderValidators.required(
