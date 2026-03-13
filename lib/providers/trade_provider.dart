@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/trade.dart';
@@ -13,19 +12,8 @@ class Trades extends _$Trades {
   Stream<List<Trade>> build() async* {
     final repository = await ref.watch(tradeRepositoryProvider.future);
 
-    // Fire and forget background sync to ensure data is fresh
-    _silentSync(repository);
-
-    // Yield the Isar stream
+    // Yield the Isar stream directly. No background sync.
     yield* repository.watchTrades();
-  }
-
-  Future<void> _silentSync(TradeRepository repository) async {
-    try {
-      await repository.syncWithRemote();
-    } catch (e) {
-      debugPrint('Background silent sync failed: $e');
-    }
   }
 
   Future<void> addTrade(Trade trade) async {
@@ -44,7 +32,6 @@ class Trades extends _$Trades {
   }
 
   Future<void> forceRefresh() async {
-    final repository = await ref.read(tradeRepositoryProvider.future);
-    await repository.syncWithRemote();
+    // No-op for 100% offline mode
   }
 }

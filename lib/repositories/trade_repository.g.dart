@@ -6,7 +6,7 @@ part of 'trade_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$tradeRepositoryHash() => r'2c5e28ba7a3e649eed883f50a09a875ef72d15a2';
+String _$tradeRepositoryHash() => r'16a1fde964ee9871996c2124a0f032dd9d761995';
 
 /// See also [tradeRepository].
 @ProviderFor(tradeRepository)
