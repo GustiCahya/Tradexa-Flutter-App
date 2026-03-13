@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 class AppColors {
   // Backgrounds & Surfaces
   static const Color background = Colors.black;
-  static const Color surface = Color(0x0CFFFFFF); // ~5% white
+  static const Color surface = Color(
+    0x0CFFFFFF,
+  ); // ~5% white (translucent, for cards/inputs)
+  static const Color surfaceSolid = Color(
+    0xFF1E1E1E,
+  ); // Opaque dark gray (for popups, menus, snackbars)
   static const Color border = Color(0x1AFFFFFF); // ~10% white
 
   // Overlays

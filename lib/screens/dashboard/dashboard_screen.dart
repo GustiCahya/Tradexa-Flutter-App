@@ -162,7 +162,7 @@ class _TradeRow extends ConsumerWidget {
           showDialog(
             context: context,
             builder: (c) => AlertDialog(
-              backgroundColor: AppColors.surface,
+              backgroundColor: AppColors.surfaceSolid,
               title: const Text('Delete Trade?'),
               actions: [
                 TextButton(

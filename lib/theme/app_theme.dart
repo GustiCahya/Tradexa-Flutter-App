@@ -8,10 +8,12 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
+      canvasColor: AppColors.surfaceSolid, // DropdownButton popup background
       colorScheme: const ColorScheme.dark(
         primary: AppColors.brandPrimary,
         secondary: AppColors.secondaryAccent,
         surface: AppColors.surface,
+        surfaceContainerHighest: AppColors.surfaceSolid,
         error: AppColors.danger,
         background: AppColors.background,
       ),
@@ -82,6 +84,32 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: AppColors.border),
         ),
+      ),
+      // SnackBar: use a solid background so text is visible
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.surfaceSolid,
+        contentTextStyle: GoogleFonts.inter(color: AppColors.textPrimary),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      // Popup menus (context menus, overflow menus)
+      popupMenuTheme: PopupMenuThemeData(
+        color: AppColors.surfaceSolid,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      // Dropdown menus (FormBuilderDropdown, DropdownButton)
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(AppColors.surfaceSolid),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+      ),
+      // Dialogs (AlertDialog, showDialog)
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.surfaceSolid,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
