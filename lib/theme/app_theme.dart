@@ -11,7 +11,7 @@ class AppTheme {
       canvasColor: AppColors.surfaceSolid, // DropdownButton popup background
       colorScheme: const ColorScheme.dark(
         primary: AppColors.brandPrimary,
-        secondary: AppColors.secondaryAccent,
+        secondary: Color.fromARGB(255, 85, 104, 247),
         surface: AppColors.surface,
         surfaceContainerHighest: AppColors.surfaceSolid,
         error: AppColors.danger,
