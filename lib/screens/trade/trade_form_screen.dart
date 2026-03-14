@@ -10,17 +10,17 @@ import '../../providers/trade_provider.dart';
 // ── Constants matching Tradexa web app ──────────────────────────────────────
 
 const List<String> _pairOptions = [
-  'EUR/USD',
-  'GBP/USD',
-  'USD/JPY',
-  'AUD/USD',
-  'USD/CAD',
-  'USD/CHF',
-  'NZD/USD',
-  'GBP/JPY',
-  'XAU/USD',
-  'BTC/USD',
-  'ETH/USD',
+  'EURUSD',
+  'GBPUSD',
+  'USDJPY',
+  'AUDUSD',
+  'USDCAD',
+  'USDCHF',
+  'NZDUSD',
+  'GBPJPY',
+  'XAUUSD',
+  'BTCUSD',
+  'ETHUSD',
 ];
 
 const List<String> _sessionOptions = ['London', 'New York', 'Asian', 'Overlap'];
