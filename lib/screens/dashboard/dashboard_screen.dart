@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../models/trade.dart';
 import '../../providers/trade_provider.dart';
+import '../../providers/trade_filter_provider.dart';
 import '../../theme/app_colors.dart';
+import 'widgets/filter_sort_sheet.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -12,6 +14,7 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tradesAsync = ref.watch(tradesProvider);
+    final filter = ref.watch(tradeFilterNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -19,6 +22,17 @@ class DashboardScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.filter),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const FilterSortSheet(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(LucideIcons.plus),
             onPressed: () => context.push('/trade-input'),
@@ -43,54 +57,76 @@ class DashboardScreen extends ConsumerWidget {
               ? trades.fold(0.0, (sum, t) => sum + t.rr) / totalTrades
               : 0.0;
 
+          final hasMore = trades.length >= filter.limit;
+
           return RefreshIndicator(
-            onRefresh: () async =>
-                ref.read(tradesProvider.notifier).forceRefresh(),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.5,
-                  children: [
-                    _StatCard(
-                      title: 'Total PnL',
-                      value: '\$${totalPnl.toStringAsFixed(2)}',
-                      valueColor: totalPnl >= 0
-                          ? AppColors.successLight
-                          : AppColors.dangerLight,
+            onRefresh: () async {
+              ref.read(tradeFilterNotifierProvider.notifier).resetLimit();
+              await ref.read(tradesProvider.notifier).forceRefresh();
+            },
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification scrollInfo) {
+                if (hasMore &&
+                    scrollInfo.metrics.pixels >=
+                        scrollInfo.metrics.maxScrollExtent - 50) {
+                  ref.read(tradeFilterNotifierProvider.notifier).loadMore();
+                }
+                return false;
+              },
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 1.5,
+                    children: [
+                      _StatCard(
+                        title: 'Total PnL',
+                        value: '\$${totalPnl.toStringAsFixed(2)}',
+                        valueColor: totalPnl >= 0
+                            ? AppColors.successLight
+                            : AppColors.dangerLight,
+                      ),
+                      _StatCard(
+                        title: 'Win Rate',
+                        value: '${winRate.toStringAsFixed(1)}%',
+                      ),
+                      _StatCard(title: 'Total Trades', value: '$totalTrades'),
+                      _StatCard(
+                        title: 'Average RR',
+                        value: '${avgRr.toStringAsFixed(2)}R',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Recent Trades',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  if (trades.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Text(
+                          'No trades found. Adjust filters or add one!',
+                        ),
+                      ),
+                    )
+                  else
+                    ...trades.map((trade) => _TradeRow(trade: trade)),
+
+                  if (hasMore)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24.0),
+                      child: Center(child: CircularProgressIndicator()),
                     ),
-                    _StatCard(
-                      title: 'Win Rate',
-                      value: '${winRate.toStringAsFixed(1)}%',
-                    ),
-                    _StatCard(title: 'Total Trades', value: '$totalTrades'),
-                    _StatCard(
-                      title: 'Average RR',
-                      value: '${avgRr.toStringAsFixed(2)}R',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                Text(
-                  'Recent Trades',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                if (trades.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Text('No trades yet. Add one!'),
-                    ),
-                  )
-                else
-                  ...trades.map((trade) => _TradeRow(trade: trade)),
-              ],
+                ],
+              ),
             ),
           );
         },

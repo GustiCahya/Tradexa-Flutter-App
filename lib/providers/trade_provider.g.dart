@@ -6,7 +6,21 @@ part of 'trade_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$tradesHash() => r'4278e598968433e59ef25c90f1e2c9163670cb1d';
+String _$tradeStatsHash() => r'170a124dbcd41b69e8f0bd9183dcae6431b2f96d';
+
+/// See also [tradeStats].
+@ProviderFor(tradeStats)
+final tradeStatsProvider = AutoDisposeStreamProvider<List<Trade>>.internal(
+  tradeStats,
+  name: r'tradeStatsProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$tradeStatsHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef TradeStatsRef = AutoDisposeStreamProviderRef<List<Trade>>;
+String _$tradesHash() => r'0cdd9997c5a04a484376e1324004aeb8dc2c82d6';
 
 /// See also [Trades].
 @ProviderFor(Trades)

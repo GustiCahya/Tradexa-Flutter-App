@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/trade.dart';
 import '../providers/isar_provider.dart';
+import '../providers/trade_filter_provider.dart';
 
 part 'trade_repository.g.dart';
 
@@ -11,9 +12,47 @@ class TradeRepository {
 
   TradeRepository(this._isar);
 
-  /// Exposes a continuous stream of trades from Isar DB.
-  Stream<List<Trade>> watchTrades() {
-    return _isar.trades.where().sortByDateDesc().watch(fireImmediately: true);
+  /// Build the base filter query from state
+  QueryBuilder<Trade, Trade, QAfterSortBy> _buildFilterQuery(
+    TradeFilter filter,
+  ) {
+    var query = _isar.trades.where().filter().isarIdGreaterThan(-1);
+
+    if (filter.pair != null) {
+      query = query.and().pairEqualTo(filter.pair!);
+    }
+    if (filter.direction != null) {
+      query = query.and().directionEqualTo(filter.direction!);
+    }
+    if (filter.session != null) {
+      query = query.and().sessionEqualTo(filter.session!);
+    }
+    if (filter.emotion != null) {
+      query = query.and().emotionEqualTo(filter.emotion!);
+    }
+
+    switch (filter.sortField) {
+      case TradeSortField.date:
+        return filter.sortAscending
+            ? query.sortByDate()
+            : query.sortByDateDesc();
+      case TradeSortField.pnl:
+        return filter.sortAscending ? query.sortByPnl() : query.sortByPnlDesc();
+      case TradeSortField.rr:
+        return filter.sortAscending ? query.sortByRr() : query.sortByRrDesc();
+    }
+  }
+
+  /// Exposes a stream of trades from Isar DB matching the filter and paginated limit.
+  Stream<List<Trade>> watchFilteredTrades(TradeFilter filter) {
+    return _buildFilterQuery(
+      filter,
+    ).limit(filter.limit).watch(fireImmediately: true);
+  }
+
+  /// Exposes a stream of all trades matching the filter (no limit) for calculating total stats
+  Stream<List<Trade>> watchFilteredStats(TradeFilter filter) {
+    return _buildFilterQuery(filter).watch(fireImmediately: true);
   }
 
   /// Create a trade locally
